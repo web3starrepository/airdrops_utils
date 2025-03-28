@@ -7,6 +7,19 @@ RED='\033[0;31m'
 NC='\033[0m' # 无颜色
 
 echo -e "${GREEN}🔄 正在更新系统...${NC}"
+
+# 检查并安装必要的系统包
+if ! command -v sudo &> /dev/null; then
+    echo -e "${YELLOW}⚠️ 正在安装 sudo...${NC}"
+    apt-get update && apt-get install -y sudo
+fi
+
+if ! command -v git &> /dev/null; then
+    echo -e "${YELLOW}⚠️ 正在安装 git...${NC}"
+    sudo apt-get install -y git
+fi
+
+# 更新系统包
 sudo apt update && sudo apt upgrade -y
 
 # 检查并安装 Rust
