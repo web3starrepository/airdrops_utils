@@ -25,27 +25,81 @@ rustc --version
 cargo --version
 
 # 检查并安装 Soundness CLI
-if ! command -v soundnessup &> /dev/null; then
-    echo -e "${GREEN}🔽 正在安装 Soundness CLI...${NC}"
-    curl -sSL https://raw.githubusercontent.com/soundnesslabs/soundness-layer/main/soundnessup/install | bash
-    source ~/.bashrc
+echo -e "${GREEN}🔽 开始安装 Soundness CLI...${NC}"
+
+# 清理可能存在的旧安装
+if [ -d "$HOME/.soundness" ]; then
+    echo -e "${YELLOW}⚠️ 检测到旧安装，正在清理...${NC}"
+    rm -rf "$HOME/.soundness"
+fi
+
+# 下载并执行安装脚本
+echo -e "${GREEN}📥 下载安装脚本...${NC}"
+if curl -sSL https://raw.githubusercontent.com/soundnesslabs/soundness-layer/main/soundnessup/install | bash; then
+    echo -e "${GREEN}✅ 安装脚本执行完成${NC}"
 else
-    echo -e "${YELLOW}✅ Soundness CLI 已安装${NC}"
+    echo -e "${RED}❌ 安装脚本执行失败${NC}"
+    exit 1
 fi
 
-# 确保 Soundness CLI 可访问
-export PATH=$HOME/.soundness/bin:$PATH
-echo 'export PATH=$HOME/.soundness/bin:$PATH' >> ~/.bashrc
-source ~/.bashrc
+# 设置环境变量
+echo -e "${GREEN}🔧 配置环境变量...${NC}"
+export PATH="$HOME/.soundness/bin:$PATH"
 
-# 检查 soundness-cli 是否在 PATH 中
-if ! command -v soundness-cli &> /dev/null; then
-    echo -e "${RED}❌ 未找到 soundness-cli！正在重新安装...${NC}"
-    rm -rf ~/.soundness
-    soundnessup install
-    export PATH=$HOME/.soundness/bin:$PATH
-    source ~/.bashrc
+# 添加环境变量到shell配置
+if ! grep -q "$HOME/.soundness/bin" "$HOME/.bashrc" 2>/dev/null; then
+    echo 'export PATH="$HOME/.soundness/bin:$PATH"' >> "$HOME/.bashrc"
 fi
+
+# 重新加载环境变量并等待
+echo -e "${GREEN}🔄 重新加载环境变量...${NC}"
+source "$HOME/.bashrc" 2>/dev/null || true
+sleep 2  # 等待环境变量生效
+
+# 验证 soundnessup 安装
+echo -e "${GREEN}🔍 验证 soundnessup 安装...${NC}"
+for i in {1..3}; do
+    if command -v soundnessup &> /dev/null; then
+        echo -e "${GREEN}✅ soundnessup 安装成功${NC}"
+        break
+    else
+        if [ $i -eq 3 ]; then
+            echo -e "${RED}❌ soundnessup 安装失败${NC}"
+            echo -e "${YELLOW}ℹ️ 尝试修复安装...${NC}"
+            export PATH="$HOME/.soundness/bin:$PATH"
+            source "$HOME/.bashrc"
+            sleep 2
+            if ! command -v soundnessup &> /dev/null; then
+                echo -e "${RED}❌ 修复失败，请手动执行: source $HOME/.bashrc${NC}"
+                exit 1
+            fi
+        fi
+        echo -e "${YELLOW}⏳ 等待 soundnessup 就绪 (尝试 $i/3)...${NC}"
+        sleep 2
+    fi
+done
+
+# 安装 soundness-cli
+echo -e "${GREEN}🔽 安装 soundness-cli...${NC}"
+soundnessup install
+sleep 2  # 等待安装完成
+
+# 验证 soundness-cli 安装
+echo -e "${GREEN}🔍 验证 soundness-cli 安装...${NC}"
+for i in {1..3}; do
+    if command -v soundness-cli &> /dev/null; then
+        echo -e "${GREEN}✅ soundness-cli 安装成功${NC}"
+        break
+    else
+        if [ $i -eq 3 ]; then
+            echo -e "${RED}❌ soundness-cli 安装失败${NC}"
+            echo -e "${YELLOW}ℹ️ 请检查安装日志并重试${NC}"
+            exit 1
+        fi
+        echo -e "${YELLOW}⏳ 等待 soundness-cli 就绪 (尝试 $i/3)...${NC}"
+        sleep 2
+    fi
+done
 
 # 验证 Soundness CLI 安装
 if command -v soundness-cli &> /dev/null; then
