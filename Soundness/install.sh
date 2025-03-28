@@ -21,7 +21,7 @@ fi
 
 # 安装编译工具链
 echo -e "${YELLOW}⚠️ 正在安装编译工具链...${NC}"
-sudo apt-get install -y build-essential gcc
+sudo apt-get install -y build-essential gcc libssl-dev
 
 # 更新系统包
 sudo apt update && sudo apt upgrade -y
